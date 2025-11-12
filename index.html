@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DIO - Busca com Grafos</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            background-color: #f0f2f5; 
+            margin: 0; 
+            padding: 20px; 
+            display: flex; 
+            justify-content: center; 
+        }
+        .container { 
+            width: 100%; 
+            max-width: 600px; 
+            background: #fff; 
+            padding: 25px; 
+            border-radius: 8px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+        }
+        h1 { 
+            text-align: center; 
+            color: #333; 
+        }
+        .busca-form { 
+            display: flex; 
+            gap: 10px; 
+            margin-bottom: 20px; 
+        }
+        #tipoBusca, #termoBusca {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        #termoBusca { 
+            flex-grow: 1; 
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover { 
+            background-color: #0056b3; 
+        }
+        #resultados { 
+            margin-top: 20px; 
+        }
+        #resultados ul { 
+            list-style-type: none; 
+            padding: 0; 
+        }
+        #resultados li { 
+            background: #fafafa; 
+            padding: 12px; 
+            border: 1px solid #eee; 
+            margin-bottom: 5px; 
+            border-radius: 4px; 
+        }
+        #resultados li strong {
+            color: #0056b3;
+        }
+        #status {
+            text-align: center;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Sistema de Recomendação de Músicas</h1>
+
+        <div class="busca-form">
+            <select id="tipoBusca">
+                <option value="musicas">Recomendar Músicas (por Usuário)</option>
+                <option value="artistas">Encontrar Artistas (Similares)</option>
+            </select>
+
+            <input type="text" id="termoBusca" placeholder="Digite o nome...">
+
+            <button onclick="fazerBusca()">Buscar</button>
+        </div>
+
+        <div id="status"></div>
+        <div id="resultados"></div>
+    </div>
+
+    <script>
+        // Função para atualizar o placeholder
+        document.getElementById('tipoBusca').addEventListener('change', function() {
+            let placeholder = (this.value === 'musicas') ? 'Digite o nome do usuário...' : 'Digite o nome do artista...';
+            document.getElementById('termoBusca').placeholder = placeholder;
+        });
+        // Aciona o placeholder na primeira carga
+        document.getElementById('tipoBusca').dispatchEvent(new Event('change'));
+
+
+        async function fazerBusca() {
+            const tipo = document.getElementById('tipoBusca').value;
+            const termo = document.getElementById('termoBusca').value;
+            const resultadosDiv = document.getElementById('resultados');
+            const statusDiv = document.getElementById('status');
+
+            resultadosDiv.innerHTML = '';
+            statusDiv.innerText = 'Buscando...';
+
+            if (!termo) {
+                statusDiv.innerText = 'Por favor, digite um termo de busca.';
+                return;
+            }
+
+            let endpoint = '';
+            let queryParam = '';
+
+            if (tipo === 'musicas') {
+                endpoint = '/recomendar-musicas';
+                queryParam = 'user';
+            } else {
+                endpoint = '/artistas-similares';
+                queryParam = 'artist';
+            }
+
+            try {
+                const response = await fetch(`${endpoint}?${new URLSearchParams({ [queryParam]: termo })}`);
+
+                if (!response.ok) {
+                    throw new Error(`Erro na API: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                statusDiv.innerText = '';
+                exibirResultados(data);
+
+            } catch (error) {
+                console.error('Erro ao buscar:', error);
+                statusDiv.innerText = 'Erro ao conectar com o servidor. Verifique o console.';
+            }
+        }
+
+        function exibirResultados(data) {
+            const resultadosDiv = document.getElementById('resultados');
+
+            if (!data || data.length === 0) {
+                resultadosDiv.innerHTML = '<p>Nenhum resultado encontrado.</p>';
+                return;
+            }
+
+            const ul = document.createElement('ul');
+            data.forEach(item => {
+                const li = document.createElement('li');
+                li.innerHTML = `<strong>${item.nome}</strong> (Score: ${item.score})`;
+                ul.appendChild(li);
+            });
+            resultadosDiv.appendChild(ul);
+        }
+    </script>
+</body>
+</html>
+
